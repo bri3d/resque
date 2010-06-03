@@ -61,17 +61,12 @@ module Resque
       if klass.to_s.empty?
         raise NoClassError.new("Jobs must be given a class.")
       end
-      
-      # Using MULTI/EXEC to ensure proper behavior if redis.sadd succeeds but Resque.push fails somehow. 
-      # In this scenario the entire redis.multi block will fail and the function will become a nop.
 
-      redis.multi do
-        if redis.sadd "job_set:#{queue}", hash_id({:class => klass.to_s, :args => args})
-          Resque.push(queue, :class => klass.to_s, :args => args)
-          true
-         else
-          false
-        end
+      if redis.sadd "job_set:#{queue}", hash_id({:class => klass.to_s, :args => args})
+        Resque.push(queue, :class => klass.to_s, :args => args)
+        true
+      else
+        false
       end
     end
 
