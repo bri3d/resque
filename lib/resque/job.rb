@@ -51,6 +51,30 @@ module Resque
       Resque.push(queue, :class => klass.to_s, :args => args)
     end
 
+    # Same as job.create, but does not push the job if this method has pushed this job onto the queue before (and it hasn't finished).
+
+    def self.create_once(queue, klass, *args)
+      if !queue
+        raise NoQueueError.new("Jobs must be placed onto a queue.")
+      end
+
+      if klass.to_s.empty?
+        raise NoClassError.new("Jobs must be given a class.")
+      end
+      
+      # Using MULTI/EXEC to ensure proper behavior if redis.sadd succeeds but Resque.push fails somehow. 
+      # In this scenario the entire redis.multi block will fail and the function will become a nop.
+
+      redis.multi do
+        if redis.sadd "job_set:#{queue}", hash_id({:class => klass.to_s, :args => args})
+          Resque.push(queue, :class => klass.to_s, :args => args)
+          true
+         else
+          false
+        end
+      end
+    end
+
     # Removes a job from a queue. Expects a string queue name, a
     # string class name, and, optionally, args.
     #

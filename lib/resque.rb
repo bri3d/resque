@@ -187,6 +187,14 @@ module Resque
   def enqueue(klass, *args)
     Job.create(queue_from_class(klass), klass, *args)
   end
+  
+  # Just like "enqueue" but will skip the job if it's already in this queue.
+  # If this is called N>0 times with the same arguments (and assuming the job does not finish), the job will be enqueued only once.
+  # This method only ensures uniqueness in the queue for jobs enqueued using enqueue_once.
+ 
+  def enqueue_once(klass, *args)
+    Job.create_once(queue_from_class(klass), klass, *args)
+  end
 
   # This method can be used to conveniently remove a job from a queue.
   # It assumes the class you're passing it is a real Ruby class (not

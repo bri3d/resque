@@ -1,3 +1,5 @@
+require 'digest'
+
 module Resque
   # Methods used by various classes in Resque.
   module Helpers
@@ -58,6 +60,10 @@ module Resque
         constant = constant.const_get(name) || constant.const_missing(name)
       end
       constant
+    end
+  
+    def hash_id(hash)
+      Digest::SHA1.hexdigest hash.to_a.sort_by {|k,v| k.to_s}.to_s
     end
   end
 end

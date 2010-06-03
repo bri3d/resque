@@ -366,6 +366,16 @@ module Resque
     # and tells Redis we processed a job.
     def done_working
       processed!
+
+      # Clear out send_once data for the job we just finished.
+      if job_data = redis.get("worker:#{self}")
+        job = decode(job_data)
+        queue = data['queue']
+        payload = data['payload']
+        
+        redis.srem "job_set:#{queue}", hash_id(payload)
+      end
+
       redis.del("worker:#{self}")
     end
 
